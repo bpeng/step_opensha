@@ -1,0 +1,249 @@
+<!--
+Step aftershocks forecast application
+	in opensha project
+	compile, buld, unit test, run
+	Baishan 20/3/2009
+-->
+<project name="STEP AfterShock Forecast Application" default="help">
+	<property name="dir.deploy" value="/home/opensha/step" />
+	<property name="app.name" value="step-aftershock" />
+	<property name="dir.base" value="../../../.." />
+	<property name="dir.src" value="${dir.base}/src" />
+	<property name="dir.test" value="${dir.base}/test" />
+	<property name="dir.res" value="${dir.base}/resources" />
+	<property name="dir.build" value="${dir.base}/build" />
+	<property name="dir.classes" value="${dir.build}/classes" />
+	<property name="dir.lib" value="${dir.base}/lib" />
+	<property name="dir.data" value="${dir.base}/data" />
+	<property name="dir.copy" value="${dir.base}/copy" />
+
+	<!-- Configure  classpath  -->
+	<path id="classpath">
+		<fileset dir="${dir.lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<!--clean up -->
+	<target name="clean" description="Clean the build directory (start from scratch).">
+		<delete>
+			<fileset dir="${dir.build}">
+				<include name="**/*" />
+			</fileset>
+		</delete>
+	</target>
+
+
+	<target name="help">
+		<echo>
+			base.dir: ${dir.base}
+					dir.build: ${dir.build}
+					export  ANT_OPTS="-Xms512m -Xmx1g"
+					available targets:
+					compile: compile the source code
+					jar: make a jar, and buld the application 
+					deploy: deploy the application to the intended directory
+					package: make tar file 
+					run: run the application				
+					unit_test: unit test
+		</echo>
+	</target>
+
+	<!--create directories -->
+	<target name="init">
+		<!-- Create the build directory if it doesn't exist -->
+		<mkdir dir="${dir.build}" />
+		<mkdir dir="${dir.classes}" />
+	</target>
+
+	<!--compile the application-->
+	<target name="compile" description="Compile the application.">
+		<javac srcdir="${dir.src}" destdir="${dir.classes}" encoding="ISO-8859-1" debug="true" source="1.8" target="1.8">
+			<include name="org/opensha/step/" />
+			<classpath refid="classpath" />
+		</javac>
+	</target>
+
+	<!--make jar and prepair deployment -->
+	<target name="jar" depends="compile" description="make jar etc.">
+		<delete file="${dir.build}/${app.name}.jar" />
+		<jar jarfile="${dir.build}/${app.name}.jar">
+			<fileset dir="${dir.classes}" includes="org/opensha/**/**/*.class" excludes="**/tests/,**/Test*" />
+			<manifest>
+				<attribute name="Main-Class" value="org.opensha.step.calc.STEP_main" />
+				<!---->
+				<attribute name="Class-Path" value=". jargs.jar log4j-1.2.4.jar commons-math-1.1.jar dom4j.jar commons-logging.jar commons-httpclient.jar jquakeml-1.0.1-2.0.1-RC1.jar" />
+			</manifest>
+		</jar>
+		<!--copy config,lib,script etc-->
+		<copy todir="${dir.build}">
+			<fileset dir="${dir.base}/">
+				<include name="data/mattg_test/" />
+				<include name="data/csep/" />
+			</fileset>
+			<fileset dir="${dir.res}/org/opensha/step">
+				<include name="config/" />
+			</fileset>
+		</copy>
+		<!-- copy lib-->
+		<mkdir dir="${dir.build}/lib" />
+		<copy todir="${dir.build}/lib">
+			<fileset dir="${dir.lib}/">
+				<include name="log4j*.jar" />
+				<include name="commons-math*.jar" />
+				<include name="dom4j.jar" />
+				<include name="commons-httpclient.jar" />
+				<include name="commons-logging.jar" />
+				<include name="jquakeml*.jar" />
+				<include name="jargs.jar" />
+			</fileset>
+			<fileset dir="${dir.res}/org/opensha/step" includes="log4j.properties" />
+			<fileset dir="${dir.build}" includes="${app.name}.jar" />
+		</copy>
+		<!-- copy scripts-->
+		<mkdir dir="${dir.build}/bin" />
+		<copy todir="${dir.build}/bin">
+			<fileset dir="${dir.res}/org/opensha/step/script/">
+				<include name="*" />
+				<include name="gmt/" />
+			</fileset>
+		</copy>
+		<mkdir dir="${dir.build}/log" />
+	</target>
+
+	<!--deploy the application -->
+	<target name="deploy" depends="jar" description="deploy the application">
+		<!--make deploy-->
+		<mkdir dir="${dir.deploy}" />
+		<copy todir="${dir.deploy}">
+			<fileset dir="${dir.build}/">
+				<include name="bin/" />
+				<include name="lib/" />
+				<include name="config/" />
+				<include name="data/" />
+				<include name="log/" />
+				<!--
+<exclude name="data/**/AllCal*"/>  
+-->
+			</fileset>
+			<fileset dir="${dir.res}/org/opensha/step/doc/">
+				<include name="readme.txt" />
+			</fileset>
+		</copy>
+		<!-- make executable-->
+		<chmod file="${dir.deploy}/bin/run_step" perm="+x" />
+	</target>
+
+	<!--build a tar file -->
+	<target name="package" depends="jar" description="Package the application, make a tar file">
+		<!--make tar-->
+		<delete file="${dir.build}/${app.name}.tar" />
+		<mkdir dir="${dir.build}/${app.name}" />
+		<copy todir="${dir.build}/${app.name}">
+			<fileset dir="${dir.build}/">
+				<include name="bin/" />
+				<include name="lib/" />
+				<include name="config/" />
+				<include name="data/" />
+				<include name="log/" />
+				<!--
+	<exclude name="data/**/AllCal*"/>  
+	-->
+			</fileset>
+			<fileset dir="${dir.res}/org/opensha/step/doc/">
+				<include name="readme.txt" />
+			</fileset>
+		</copy>
+		<!-- make executable-->
+		<chmod file="${dir.build}/${app.name}/bin/run_step" perm="+x" />
+		<tar destfile="${dir.build}/${app.name}.tar">
+			<tarfileset dir="${dir.build}/">
+				<include name="${app.name}/" />
+			</tarfileset>
+		</tar>
+		<delete dir="${dir.build}/${app.name}" />
+	</target>
+
+	<!--make config   -->
+	<target name="config" description="make_config file">
+		<input message="Please enter config options: us, nz" addproperty="args" />
+		<copy tofile="${dir.res}/org/opensha/step/config/defaults.properties" file="${dir.res}/org/opensha/step/config/defaults_${args}.properties">
+		</copy>
+	</target>
+
+	<!--copy java source files for the step code, along with the java class: FileDirCopy to copy dependent classes   -->
+	<target name="copysrc">
+		<copy todir="${dir.copy}/opensha">
+			<fileset dir="${dir.base}/">
+				<include name="data/" />
+				<exclude name="data/siteData/" />
+				<include name="resources/" />
+			</fileset>
+		</copy>
+		<copy todir="${dir.copy}/opensha/src">
+			<fileset dir="${dir.src}/">
+				<include name="**/**/step/" />
+			</fileset>
+		</copy>
+		<!-- copy lib-->
+		<mkdir dir="${dir.copy}/opensha/lib" />
+		<copy todir="${dir.copy}/opensha/lib">
+			<fileset dir="${dir.lib}/">
+				<include name="*.jar" />
+
+			</fileset>
+			<fileset dir="${dir.build}" includes="${app.name}.jar" />
+		</copy>
+	</target>
+
+	<!--run the jar file  -->
+	<target name="run" depends="package" description="run the application">
+		<input message="Please enter args ...... (0 -- run STEP_main
+				1 -- run STEP_HazardDataSet
+				1 c -- run STEP_HazardDataSet continuously
+				1 c n m  -- run STEP_HazardDataSet continuously for n times at m minutes interval)" addproperty="args" />
+		<java jar="${dir.build}/lib/${app.name}.jar" dir="${dir.build}" maxmemory="1024m" fork="yes">
+			<arg line="${args}" />
+			<sysproperty key="DEBUG" value="true" />
+		</java>
+	</target>
+
+	<!-- unit test, command:
+export ANT_OPTS="-Xms512m -Xmx1024m"
+cd ${dir.classes}
+ant -buildfile ../../src/org/opensha/step/build.xml   unit_test
+-->
+	<target name="unit_test" depends="compile" description="unit tests  ">
+		<javac srcdir="${dir.test}" destdir="${dir.classes}" encoding="ISO-8859-1" debug="true" source="1.8" target="1.8">
+			<include name="org/opensha/step/" />
+			<classpath refid="classpath" />
+		</javac>
+
+		<copy todir="${dir.classes}">
+			<fileset dir="${dir.src}" includes="org/opensha/sha/earthquake/rupForecastImpl/step/AllCal96ModelDaily.txt" />
+		</copy>
+
+		<copy todir="${dir.classes}">
+			<fileset dir="${dir.base}/">
+				<include name="data/mattg_test/" />
+			</fileset>
+
+			<fileset dir="${dir.res}/org/opensha/step">
+				<include name="config/" />
+				<include name="log4j.properties" />
+			</fileset>
+		</copy>
+
+		<junit printsummary="true" dir="${dir.classes}">
+			<formatter type="plain" usefile="false" />
+			<test name="org.opensha.step.AllTests" />
+			<classpath>
+				<pathelement location="${dir.classes}" />
+			</classpath>
+			<classpath refid="classpath" />
+		</junit>
+
+		<delete dir="${dir.classes}/data" />
+		<delete dir="${dir.classes}/config" />
+	</target>
+</project>

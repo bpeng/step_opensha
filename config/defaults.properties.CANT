@@ -1,0 +1,117 @@
+################################################################
+###### properties for running the step application 		########
+###### this file goes to the config dir of the app root ########
+################################################################
+##generic.model.type, 0=r&j, 1=new generic
+generic.model.type=0
+##save the step models for next time? 0--false, 1--true
+save.models=0
+##model format 0-- other, 1--csep
+model.format=0
+##how the model.params.file path is specified: 0--config, 1--commandline args
+params.file.option=0
+model.params.file=data/csep/CSEPNZ_params.txt
+##input files
+data.dir=data/mattg_test
+#data.dir=data/china
+input.file.cube=merge_NZ.nts
+input.file.bg.haz=NZZeroHaz05.dat
+input.file.bg.rates=NZZeroRate05.dat
+#input.file.bg.haz=NZDailyZeroHaz_shifted.txt
+#input.file.bg.rates=NZdailyRates_shifted.txt
+#input.file.bg.haz=STEP_NZHazProb.txt
+#input.file.bg.rates=NZdailyRates.txt
+#input.file.cube=china2ml_2008_2010.eqt
+#STEP_NZHazProb.txt south_north_HazGrid.txt
+#input.file.bg.haz=yushuHazGrid.txt
+#NZdailyRates.txt, south_north_belt_background50km.dat
+#input.file.bg.rates=yushu_background50km.dat
+##output files
+output.dir=output
+output.file.step.prob=STEP_Probs.txt
+output.file.time.dep.rates=TimeDepRates.txt
+output.file.step.rates=STEP_Rates.txt
+output.file.haz.curv.prob=HazCurve_Probs.txt
+output.file.step.aftershock.obj=STEP_AftershockObj
+##mag params
+min.mag.main=3.0
+min.mag.forcast=5.0
+max.mag.forcast=8.0
+delta.mag.forcast=0.1
+forecast.len.days=30
+##start forecast from current time? 1=yes,0=no (for testing)20100414053959 
+start.forecast.current=0
+## forecast start time in UTC
+forecast.start.time=2011-11-14T013:00:00
+## the start time  in UTC to read events from input file 2008-05-12T06:28:04
+event.start.time=2009-01-01T16:35:00
+days.from.qdm=30
+## min aftershock zone radium
+min.aftershock.radium=10
+## define bg grid (nz)
+##DUN Grid
+#bg.min.lat=-46.9
+#bg.max.lat=-45.0
+#bg.min.lon =169.0
+#bg.max.lon=171.5
+## WGTN Grid
+#bg.min.lat=-42.6
+#bg.max.lat=-39.6
+#bg.min.lon =172.8
+#bg.max.lon=175.8
+## Small ChCh grid
+#bg.min.lat=-43.8
+#bg.max.lat=-43.2
+#bg.min.lon =172.5
+#bg.max.lon=172.8
+## ChCh grid
+bg.min.lat=-45.05
+bg.max.lat=-42.05
+bg.min.lon =170.15
+bg.max.lon=174.15
+## NZ Grid
+#bg.min.lat=-47.95
+#bg.max.lat=-34.05
+#bg.min.lon =164.05
+#bg.max.lon=179.95
+grid.spacing=0.05
+grid.precision=0.01
+## define bg grid (china)
+#bg.min.lat=28
+#bg.max.lat=36
+#bg.min.lon =90
+#bg.max.lon=103
+#grid.spacing=0.1
+#grid.precision=0.01
+##the anchor point to create background grid, 0.05 for nz
+grid.anchor=0.0
+##the cutoff distance (of the grid spacing) in calculating forecast
+grid.cutoff= 0.5
+## forecast params (china)
+#is the forecast parameters fixed? 0=no (china, be able to change parameters), yes=1
+forecast.param.fixed=0
+#Davina's params
+a.value=-1.59
+b.value=1.03
+p.value=1.07
+c.value=0.04
+#Donna's params
+#a.value=-1.66
+#b.value=1.03
+#p.value=1.02
+#c.value=0.03
+#china values
+#a.value=-2.00
+#b.value=0.65
+#p.value=0.80
+#c.value=0.05
+######geonet quake category
+##specify the event source to query quakes, 0--file in input dir, 1--GeoNet quakeML, 2--china catalogue
+quake.datasource=1
+##geoNet quakeML url
+##geonet.quake.url=http://app-dev.geonet.org.nz/services/quake/quakeml/1.0.1/query
+geonet.quake.url=http://magma.geonet.org.nz/services/quake/quakeml/1.0.1/query
+##default continuous test times{minutes}{hours}{days} 1,2,3,4,5,6,7,8
+default.test.times={1}{1}{1,2,3,5}
+# days to read events before event.start.time for the first time of the above test
+default.test.read.back=1

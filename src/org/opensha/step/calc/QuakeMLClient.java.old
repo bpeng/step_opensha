@@ -1,0 +1,190 @@
+package org.opensha.step.calc;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.xml.datatype.XMLGregorianCalendar;
+import org.apache.log4j.Logger;
+import org.opensha.commons.data.Location;
+import org.opensha.sha.earthquake.observedEarthquake.ObsEqkRupList;
+import org.opensha.sha.earthquake.observedEarthquake.ObsEqkRupture;
+import nz.org.geonet.quakeml.v1_0_1.client.QuakemlFactory;
+import nz.org.geonet.quakeml.v1_0_1.client.QuakemlUtils;
+import nz.org.geonet.quakeml.v1_0_1.domain.Event;
+import nz.org.geonet.quakeml.v1_0_1.domain.Magnitude;
+import nz.org.geonet.quakeml.v1_0_1.domain.Origin;
+import nz.org.geonet.quakeml.v1_0_1.domain.Quakeml;
+
+/**
+ * this class is used to query quakes from the GeoNet Quake category
+ * using the quakeMl lib
+ * query params: http://www.geonet.org.nz/resources/earthquake/quake-web-services.html
+ * url example:
+ *  http://app-dev.geonet.org.nz/services/quake/quakeml/1.0.1/query?startDate=2009-05-30T01:11:11&endDate=2009-05-30T11:11:11
+ *  
+ * @author baishan
+ *
+ */
+public class QuakeMLClient {
+	private static final String QUAKE_DATA_SOURCE = "GEONET";
+	private static final char QUAKE_EVENT_VERSION = '0';  //is eventVersion stored in the database?? may be similar to the evaluation status?
+	//public static final String EVENT_EVALUATION_STATUS_COMFIRMED = "confirmed";
+	//public static final String EVENT_EVALUATION_STATUS_PRE = "preliminary";
+	//public static final String EVENT_EVALUATION_STATUS_REJECTED = "rejected";
+	
+	public  QuakemlFactory qkmlFactory = new QuakemlFactory();
+	private static Pattern idPattern =  Pattern.compile("[0-9]{1,10}");
+	public  static SimpleDateFormat dateformater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");//"2007-05-12T07:41:04.874Z"
+	private static Logger logger = Logger.getLogger(QuakeMLClient.class);
+	static { dateformater.setTimeZone(TimeZone.getTimeZone("UTC"));  }
+	
+	/**
+	 * @param startDate
+	 * @param endDate
+	 * TODO the current quakeml can only query to scale of day, and the end time is chopped to 00:00:00,
+	 * so one day is added to the end date to make a wider range and a check on the results is added
+	 * which is not necessary when a fine grained query in available in quakeml
+	 */
+	public ObsEqkRupList retrieveEvents(Calendar startDate, Calendar endDate){
+		if(startDate == null || endDate == null){
+			logger.error("startDate and endDate must be specified for QuakeMl client!!");
+			return null;
+		}
+		//Calendar endDatePlus1 = STEP_main.getCurrentGregorianTime();
+		//endDatePlus1.setTimeInMillis(endDate.getTimeInMillis() + 24*60*60*1000l);//extend one day to include that day, make the time range wider
+		String request = RegionDefaults.GEONET_QUAKEML_URL + "?startDate=" + dateformater.format(startDate.getTime()) 
+						+ "&endDate=" + dateformater.format(endDate.getTime());
+		logger.info("quakeML request " + request);
+		//http://app-dev.geonet.org.nz/services/quake/quakeml/1.0.1/query?startDate=2007-05-17&endDate=2007-05-18
+		Quakeml qkml = qkmlFactory.getQuakeml(request, null, null);//request, username, password	    
+	 
+		ObsEqkRupList eqkRupList = new ObsEqkRupList();
+		List <Event> events = qkml.getEventParameters().getEvent();
+		logger.info("quakeML events=" + events.size());
+		for(Event event:events){
+			ObsEqkRupture rupture = event2Rupture(event);
+			if(rupture != null){
+				//logger.info("rupture " + rupture.getInfo());
+				rupture = checkTime(rupture,startDate,endDate);
+				if(rupture != null) eqkRupList.addObsEqkEvent(rupture);
+			}
+		}
+		logger.info("eqkRupList=" + eqkRupList.size());
+		return eqkRupList;
+	}
+	
+	/**
+	 * check a quake is within specified time range
+	 * @param rupture
+	 * @param start: the start time, inclusive
+	 * @param end: the end time, not inclusive
+	 * @return
+	 */
+	private ObsEqkRupture checkTime(ObsEqkRupture rupture, Calendar start,
+			Calendar end) {
+		if(rupture.getOriginTime().before(start)){
+			return null;
+		}
+		if(rupture.getOriginTime().after(end)||rupture.getOriginTime().equals(end)){//not inclusive
+			return null;
+		}
+		return rupture;
+	}
+
+	/**
+	 * transfer quakeml event to ObsEqkRupture
+	 * @param event
+	 * @return
+	 */
+	public ObsEqkRupture event2Rupture(Event event){
+		try{
+			String publicID = event.getPublicID();	//e.g.smi:geonet.org.nz/ori/431978/GROPE		
+			Matcher m = idPattern.matcher(publicID);
+			String eventID = publicID;		
+			if( m.find()){					
+				eventID = publicID.substring(m.start(), m.end());//extract the number:431978	
+			}
+			
+			char eventVersion = QUAKE_EVENT_VERSION;
+			//logger.info("1 eventID " + eventID  );
+			Origin origin = QuakemlUtils.getPreferredOrigin(event);//event.getOrigin().get(0);
+			String evalStatus = origin.getEvaluationStatus().value();
+			//logger.info("2 eventID " + eventID + " evalStatus " + evalStatus  );
+			if(evalStatus != null && evalStatus.length() > 0){//TODO check, it seems the only equavlent property to the event version is the evaluation status
+				eventVersion = evalStatus.charAt(0);
+			}
+			XMLGregorianCalendar oriTime = origin.getTime().getValue();
+			
+			GregorianCalendar originTime = oriTime.toGregorianCalendar(TimeZone.getTimeZone("UTC"), null, null);//new GregorianCalendar(TimeZone.getTimeZone("GMT"));			
+ 			
+			double lat = origin.getLatitude().getValue();
+			double lon = origin.getLongitude().getValue();
+			double depth =  origin.getDepth().getValue();
+			//
+			//if lat or lon of the events are outside the region bounds then neglect them.
+			if(lat < RegionDefaults.searchLatMin || lat >RegionDefaults.searchLatMax)
+				return null;
+			if(lon < RegionDefaults.searchLongMin || lon > RegionDefaults.searchLongMax)
+				return null;			
+			
+			Location hypoLoc = new Location(lat, lon, depth);
+			
+			Magnitude mag = QuakemlUtils.getPreferredMagnitude(event);//event.getMagnitude().get(0);
+			String magType = mag.getType();
+			double magval =   0;
+			if(mag != null && mag.getMag() != null) {
+				magval =  mag.getMag().getValue();
+				//Geonet mags must be rounded to 10th
+				double smagval = magval*10.0;
+				long tmagval = Math.round(smagval);
+				magval = tmagval/10.0;
+			} else {//a quake event must have a magnitude
+				return null;
+			}
+		    //logger.info("oriTime=" + oriTime + " lat " + lat + " lon " + lon + " depth " + depth + " mag " + magval  + " magType " + magType);
+		    
+		    double horzErr =0, vertErr=0, magErr=0;
+		    
+		    if(mag != null && mag.getMag() != null && mag.getMag().getUncertainty() != null) {
+		    	magErr = mag.getMag().getUncertainty();
+		    }
+		    
+		    if(origin != null ){
+		    	double latErr = 0, lonErr = 0;	  
+	    		if(origin.getLatitude() != null && origin.getLatitude().getUncertainty() != null){
+	    			latErr = origin.getLatitude().getUncertainty();
+	    		}
+	    		if(origin.getLongitude() != null && origin.getLongitude().getUncertainty() != null){
+	    			lonErr = origin.getLongitude().getUncertainty();	
+	    		}				   		  
+			    horzErr = lonErr > latErr? lonErr:latErr;		    	
+		    	if( origin.getDepth() != null && origin.getDepth().getUncertainty() != null ){		    		
+				    vertErr = origin.getDepth().getUncertainty();	
+		    	}		    	
+		    }	
+		    //#############################TODO remove!!!
+		    if(depth > RegionDefaults.SOURCE_MAX_DEPTH){//40
+				return null;
+			}
+		    if(magval < RegionDefaults.SOURCE_MIN_MAG){//2.5
+				return null;
+			}
+		  //#############################TODO end
+			
+		    //logger.info("horzErr=" + horzErr + " vertErr " + vertErr   );		    		
+		    return  new ObsEqkRupture(eventID,QUAKE_DATA_SOURCE, eventVersion,
+					originTime,horzErr,vertErr,magErr,
+					magType,hypoLoc,magval);
+		    
+		}catch(Exception e){
+			logger.error("event2Rupture parse event error " + e);
+			//e.printStackTrace();
+			return null;
+		}		
+	}
+}
