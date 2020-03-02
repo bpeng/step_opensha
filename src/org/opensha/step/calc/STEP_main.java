@@ -13,6 +13,7 @@ import org.opensha.sha.earthquake.griddedForecast.HypoMagFreqDistAtLoc;
 import org.opensha.sha.earthquake.griddedForecast.STEP_CombineForecastModels;
 import org.opensha.sha.earthquake.observedEarthquake.*;
 import org.opensha.sha.earthquake.rupForecastImpl.PointEqkSource;
+import org.opensha.sha.faultSurface.FaultTrace;
 import org.opensha.sha.magdist.IncrementalMagFreqDist;
 
 import java.io.*;
@@ -600,6 +601,8 @@ public class STEP_main {
 		int numMainshocks = STEP_AftershockForecastList.size();	    
 		log("start numMainshocks  " + numMainshocks);	    
 		double maxMag = 0, msMag, newMag ;
+		//load external faults from file
+		Map<String,FaultTrace> externalFaults = loadExternalFaultModelFromFile(RegionDefaults.EXTERNAL_FAULT_MODEL_SOURCE_FILE);
 
 		synchronized(STEP_AftershockForecastList) {//lock STEP_AftershockForecastList
 			int numBigEvent =0, numSameEvent = 0;
@@ -638,10 +641,6 @@ public class STEP_main {
 					// in this mainshock while we're at it.
 					mainshockModel.updateCurrentTime(currtTime);					
 					//
-					
-					
-				
-
 					// returns boolean if event is in aftershockzone, but does not set anything
 					//IsAftershockToMainshock_Calc seeIfAftershock =
 					//	new IsAftershockToMainshock_Calc(newEvent, mainshockModel);	
@@ -708,8 +707,12 @@ public class STEP_main {
 					// if there is an external fault model available
 					// and the mag is greater than the min mag for this, set the boolean to true
 					if (RegionDefaults.hasExternalFaultModel){
-						if(newForecastMod.getMainShock().getMag() >= RegionDefaults.minCoulombMS_Mag){
-							newForecastMod.setHasExternalFaultModel(RegionDefaults.hasExternalFaultModel);
+						//if(newForecastMod.getMainShock().getMag() >= RegionDefaults.minCoulombMS_Mag){
+						FaultTrace faultTrace = externalFaults.get(newForecastMod.getMainShock().getEventId());
+                        if(faultTrace != null) {
+                            log("# eventsForExternalFaultsModel " + newForecastMod.getMainShock().getEventId());
+							newForecastMod.set_FaultSurface(faultTrace);
+							newForecastMod.setHasExternalFaultModel(true);
 						}
 					}
 
@@ -764,7 +767,7 @@ public class STEP_main {
 		CubeToObsEqkRupture getNewEvents = null;
 		try {
 			//logger.info("loadEventsFromFile:  " + eventsFilePath );
-			logger.info("loadEventsFromFile:  " + new File(eventsFilePath).getName() );
+			logger.info("loadEventsFromFile:  " + new File(eventsFilePath).getName() + " datasource " + RegionDefaults.EVENT_DATA_SOURCE );
 			if(RegionDefaults.EVENT_DATA_SOURCE == RegionDefaults.EVENT_SOURCE_FILE){
 				getNewEvents = new CubeToObsEqkRupture(eventsFilePath,start, end );
 			}else if((RegionDefaults.EVENT_DATA_SOURCE == RegionDefaults.EVENT_SOURCE_CHINA)){
@@ -784,6 +787,59 @@ public class STEP_main {
 			ex.printStackTrace();
 		}
 		return null;	
+	}
+
+	/**
+	 * load external faults model from file
+	 *
+	 * @return a map of FaultTrace keyed by eventId
+	 */
+	public Map<String,FaultTrace> loadExternalFaultModelFromFile(String filePath) {
+		Map<String,FaultTrace> faultTraces = new HashMap<String, FaultTrace>();
+		log("# loadExternalFaultModelFromFile filePath " + filePath);
+		try {
+			ArrayList fileLines = FileUtils.loadFile(filePath);
+			log("# loadExternalFaultModelFromFile fileLines " + fileLines.size());
+			for (int i = 0; i <  fileLines.size(); i++) {
+				String line = (String) fileLines.get(i);
+				if(line.startsWith("#")) {
+					continue; //header line
+				}
+				FaultTrace fault = makeFaultTrace(line);
+				if(fault != null) {
+					faultTraces.put(fault.getName(), fault);
+				}
+			}
+		} catch (IOException e) {
+			logger.error("error loading ExternalFaultModelFromFile ", e);
+		}
+		log("# loadExternalFaultModelFromFile " + faultTraces.size());
+		return faultTraces;
+	}
+
+	/**
+	 * create a FaultTrace defined by a line in the external_fault_model file
+	 * eventId lon1 lat1 lon2 lat2 lon3 lat3
+	 * @param line
+	 * @return
+	 */
+	private FaultTrace makeFaultTrace(String line) {
+		String [] modelParams = line.split(RegionDefaults.PATTERN_SPACE);
+		if(modelParams.length == 7) {
+			String evenId = modelParams[0];
+			String lon1 = modelParams[1];
+			String lat1 = modelParams[2];
+			String lon2 = modelParams[3];
+			String lat2 = modelParams[4];
+			String lon3 = modelParams[5];
+			String lat3 = modelParams[6];
+			FaultTrace fault_trace = new FaultTrace(evenId);
+			fault_trace.addLocation((new Location(Double.parseDouble(lat1), Double.parseDouble(lon1), 0)));
+			fault_trace.addLocation((new Location(Double.parseDouble(lat2), Double.parseDouble(lon2), 0)));
+			fault_trace.addLocation((new Location(Double.parseDouble(lat3), Double.parseDouble(lon3), 0)));
+			return fault_trace;
+		}
+		return null;
 	}
 
 

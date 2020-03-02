@@ -1,14 +1,14 @@
 package org.opensha.sha.earthquake.observedEarthquake;
 
+import org.apache.log4j.Logger;
+import org.opensha.commons.data.Location;
+import org.opensha.step.calc.RegionDefaults;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
-
-import org.apache.log4j.Logger;
-import org.opensha.commons.data.Location;
-import org.opensha.step.calc.RegionDefaults;
 
 public class CubeToObsEqkRuptureCsepFormat extends CubeToObsEqkRupture {
 	private static Logger logger = Logger.getLogger(CubeToObsEqkRuptureChinaFormat.class);
@@ -20,7 +20,7 @@ public class CubeToObsEqkRuptureCsepFormat extends CubeToObsEqkRupture {
 
 	/* 
 	 * 	1				2				3				4				5				6				7				8				9				10				11				12				13				14				15				 
-		lon				lat				dec year		month			day				mag				depth			hour			minute			sec				horz.err		depth.err		mag.err	
+	 *	lon				lat				dec year		month			day				mag				depth			hour			minute			sec				horz.err		depth.err		mag.err
 	 * (non-Javadoc)
 	 * @see org.opensha.sha.earthquake.observedEarthquake.CubeToObsEqkRupture#readFile(java.lang.String)
 	 */
@@ -45,7 +45,9 @@ public class CubeToObsEqkRuptureCsepFormat extends CubeToObsEqkRupture {
 		String dpthStr = eventsParams[6];
 		String magErrStr = eventsParams[12];
 		String depthErrStr = eventsParams[11];
-		String horrErrStr = eventsParams[10];		
+		String horrErrStr = eventsParams[10];
+		String eventIDStr = eventsParams[13];
+		//logger.info("eventId=" + eventIDStr);
 		
 		double lat = Double.parseDouble(latStr);
 		double lon = Double.parseDouble(lonStr);
@@ -77,7 +79,7 @@ public class CubeToObsEqkRuptureCsepFormat extends CubeToObsEqkRupture {
 		if(magErrStr !=null && !magErrStr.equals(""))
 			magErr = Double.parseDouble(magErrStr);		
 	
-		return new ObsEqkRupture(RegionDefaults.dateformater.format(originTime.getTime()) ,
+		return new ObsEqkRupture(eventIDStr ,
 				"CS",'0',
 				originTime,horzErr,vertErr,magErr,
 				"",new Location(lat, lon, depth),mag);

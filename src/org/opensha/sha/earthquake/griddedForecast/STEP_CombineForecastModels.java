@@ -540,25 +540,6 @@ extends AfterShockHypoMagFreqDistForecast {
 			}
 			
 			this.useSausageRegion = true;
-			
-			String faultName = "external_typeIIfault";
-			// add the synthetic fault to the fault trace
-			// do not add the 2nd element as it is the same as the 3rd (the mainshock location)
-			LocationList extFaultPoints = new LocationList();
-			extFaultPoints.addLocation(RegionDefaults.extFaultLat1, RegionDefaults.extFaultLon1, 0);
-			extFaultPoints.addLocation(RegionDefaults.extFaultLat2, RegionDefaults.extFaultLon2, 0);
-			extFaultPoints.addLocation(RegionDefaults.extFaultLat3, RegionDefaults.extFaultLon3, 0);
-
-			FaultTrace fault_trace = new FaultTrace(faultName);
-			fault_trace.addLocation(extFaultPoints.getLocationAt(0));
-			fault_trace.addLocation(extFaultPoints.getLocationAt(1));
-			fault_trace.addLocation(extFaultPoints.getLocationAt(2));
-			System.out.println("EXTERNAL "+this.mainShock.getMag()+" fault_trace " + extFaultPoints.getLocationAt(0) + " " + extFaultPoints.getLocationAt(1) + " " + extFaultPoints.getLocationAt(2) );
-					
-			
-			//			
-			set_FaultSurface(fault_trace);
-			
 			// This needs to be set up to read an external fault model.
 		}
 		else {
@@ -612,7 +593,7 @@ extends AfterShockHypoMagFreqDistForecast {
 	 * TODO check the class used is correct, CyberShakeEvenlyGriddedSurface??
 	 * @param fault_trace
 	 */
-	private void set_FaultSurface(FaultTrace fault_trace) {	
+	public void set_FaultSurface(FaultTrace fault_trace) {
 		CyberShakeEvenlyGriddedSurface griddedSurface = new CyberShakeEvenlyGriddedSurface(1, 
 				fault_trace.size(), 
 				this.aftershockZone.getSpacing());

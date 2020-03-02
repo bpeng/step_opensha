@@ -3,16 +3,6 @@
  */
 package org.opensha.step.calc;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.ListIterator;
-import java.util.StringTokenizer;
-import java.text.DecimalFormat;
-
-
-
 import org.opensha.commons.data.Location;
 import org.opensha.commons.data.LocationList;
 import org.opensha.commons.data.function.EvenlyDiscretizedFunc;
@@ -20,6 +10,14 @@ import org.opensha.commons.util.FileUtils;
 import org.opensha.sha.earthquake.griddedForecast.HypoMagFreqDistAtLoc;
 import org.opensha.sha.earthquake.griddedForecast.STEP_CombineForecastModels;
 import org.opensha.sha.magdist.IncrementalMagFreqDist;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.ListIterator;
+import java.util.StringTokenizer;
 
 /**
  * @author matthew
@@ -59,7 +57,8 @@ public class ApplyCoulombFilter {
 
 		for (int modelLoop = 0; modelLoop < numAftershockModels; ++modelLoop){
 			forecastModel = (STEP_CombineForecastModels)STEP_AftershockForecastList.get(modelLoop);
-			if(forecastModel.getMainShock().getMag() > RegionDefaults.minCoulombMS_Mag){
+			//if(forecastModel.getMainShock().getMag() > RegionDefaults.minCoulombMS_Mag){
+			if(forecastModel.getHasExternalFaultModel()) { //TODO: check this is OK to replace the above condition!!
 				// get the list of locations for the aszone of the main mainshock
 				LocationList gridLocs = forecastModel.getAfterShockZone().getNodeList();
 				// get the distances of these locations from the fault
