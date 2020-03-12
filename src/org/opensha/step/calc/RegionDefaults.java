@@ -402,7 +402,9 @@ public class RegionDefaults {
 			extFaultLon3 = Double.parseDouble(props.getProperty("cf.extFaultLon3","174.301"));
 
 			hasExternalFaultModel = Boolean.parseBoolean(props.getProperty("cf.hasExternalFaultModel","TRUE"));
-
+            //get the EXTERNAL_FAULT_MODEL_SOURCE_FILE path
+            EXTERNAL_FAULT_MODEL_SOURCE_FILE = INPUT_DIR + "/" + props.getProperty("cf.ext.fault.traces.file","external_fault_model.txt");
+            logger.info("EXTERNAL_FAULT_MODEL_SOURCE_FILE = " + EXTERNAL_FAULT_MODEL_SOURCE_FILE);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
