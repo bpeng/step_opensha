@@ -606,6 +606,7 @@ public class STEP_main {
 
 		synchronized(STEP_AftershockForecastList) {//lock STEP_AftershockForecastList
 			int numBigEvent =0, numSameEvent = 0;
+			boolean faultTraceFound = false;
 			// loop over new events
 			loop1: while (newIt.hasNext()) {
 				newEvent = (ObsEqkRupture) newIt.next();
@@ -713,6 +714,7 @@ public class STEP_main {
                             log("# eventsForExternalFaultsModel " + newForecastMod.getMainShock().getEventId());
 							newForecastMod.set_FaultSurface(faultTrace);
 							newForecastMod.setHasExternalFaultModel(true);
+							faultTraceFound = true;
 						}
 					}
 
@@ -723,7 +725,12 @@ public class STEP_main {
 				}
 			}//end of loop1 -- new events		
 			numMainshocks = STEP_AftershockForecastList.size();	    
-			log("end numMainshocks  " + numMainshocks);	
+			log("end numMainshocks  " + numMainshocks);
+
+			//error message if faultTrace not found
+			if (!faultTraceFound && RegionDefaults.hasExternalFaultModel) {
+				logger.error("## externalFault trace not found!!");
+			}
 		}
 
 		return numMainshocks;
