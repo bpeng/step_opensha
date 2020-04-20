@@ -157,7 +157,6 @@ public class RegionDefaults {
 	public static double coulombFaultRadius = 5.1; // distance in km from fault to use STEP only forecast within
 	public static String coulombFilterPath =  INPUT_DIR + "/stress_tst_big.dat";
 	public static String outputCoulombRatePath = OUTPUT_DIR + "/coulombRates.txt";
-	public static double minCoulombMS_Mag = 7.0; // dont apply coulomb filter based on MS below this (should only be 1 above)
 
 	//public static double extFaultLat1 = -41.07;
 	//public static double extFaultLon1=175.195;
@@ -187,14 +186,6 @@ public class RegionDefaults {
      //public static double extFaultLon2=171.15;
      //public static double extFaultLat3 =-45.0416;
      //public static double extFaultLon3=166.9833;
-
-     // Kaikoura Fault
-     public static double extFaultLat1 =-42.755;
-     public static double extFaultLon1=172.691;
-     public static double extFaultLat2 =-42.328;
-     public static double extFaultLon2=173.731;
-     public static double extFaultLat3 =-41.684;
-     public static double extFaultLon3=174.301;
 
 
 	public static boolean hasExternalFaultModel=true;
@@ -392,14 +383,6 @@ public class RegionDefaults {
 			coulombFaultRadius = Double.parseDouble(props.getProperty("cf.coulombFaultRadius","0")); // distance in km from fault to use STEP only forecast within
 			coulombFilterPath =   INPUT_DIR + "/" + props.getProperty("cf.coulombFilterFile","stress_tst_big.dat");
 			outputCoulombRatePath = OUTPUT_DIR + "/" + props.getProperty("cf.outputCoulombRateFile","coulombRates.txt");
-			minCoulombMS_Mag = Double.parseDouble(props.getProperty("cf.minCoulombMS_Mag","7.0")); // dont apply coulomb filter based on MS below this (should only be 1 above)
-			extFaultLat1 = Double.parseDouble(props.getProperty("cf.extFaultLat1","-42.755"));
-			extFaultLon1= Double.parseDouble(props.getProperty("cf.extFaultLon1","172.691"));
-			extFaultLat2 = Double.parseDouble(props.getProperty("cf.extFaultLat2","-42.328"));
-			extFaultLon2 = Double.parseDouble(props.getProperty("cf.extFaultLon2","173.731"));
-			extFaultLat3 = Double.parseDouble(props.getProperty("cf.extFaultLat3","-41.684"));
-			logger.info("extFault = " + extFaultLat3);
-			extFaultLon3 = Double.parseDouble(props.getProperty("cf.extFaultLon3","174.301"));
 
 			hasExternalFaultModel = Boolean.parseBoolean(props.getProperty("cf.hasExternalFaultModel","TRUE"));
             //get the EXTERNAL_FAULT_MODEL_SOURCE_FILE path
